@@ -1,21 +1,10 @@
-# 🌾 FarmTrace - SIH 2025 Blockchain Agricultural Platform
+# 🌾 FarmTrace - Blockchain Agricultural Platform
 
 ## 🏆 PUBLIC REPOSITORY - OPEN FOR EVERYONE
 **Anyone can view, download, and run this project!**
 
-## SIH 2025 Problem Statement #25045
+## Problem Statement #
 **Blockchain-Based Supply Chain Transparency for Agricultural Produce**
-**Organization:** Government of Odisha - Electronics & IT Department
-
-## 🚀 QUICK START FOR ANYONE
-1. **Download**: Click green "Code" button → "Download ZIP"
-2. **Extract**: Unzip the downloaded file
-3. **Run Demo**: Double-click `START_DEMO.bat`
-4. **View in Browser**: Open `http://localhost:3000`
-
-## 🌐 OR VIEW ONLINE DEMO
-- **Static Demo**: Open `frontend/farmtrace_complete.html` in any browser
-- **No installation required!**
 
 ---
 
@@ -49,30 +38,6 @@
 - **40% reduction in subsidy leakage** through blockchain verification
 - **25% increase in export potential** with trusted certificates
 - **1 lakh+ farmers** scalable architecture
-
----
-
-## 🚀 How to View the Working Prototype
-
-### Method 1: Direct Browser Opening
-1. **Open File Explorer** and navigate to: `C:\Users\Ridhi\Desktop\SIH Hackathon 2025\frontend\`
-2. **Right-click** on `farmtrace_complete.html`
-3. **Select "Open with" → Google Chrome**
-4. The prototype will open immediately in Chrome
-
-### Method 2: Chrome Address Bar
-1. **Open Google Chrome**
-2. **Press Ctrl+L** to focus on address bar
-3. **Type or paste:**
-   ```
-   file:///C:/Users/Ridhi/Desktop/SIH%20Hackathon%202025/frontend/farmtrace_complete.html
-   ```
-4. **Press Enter**
-
-### Method 3: Drag & Drop
-1. **Open Google Chrome**
-2. **Open File Explorer** to the frontend folder
-3. **Drag** `farmtrace_complete.html` **into Chrome browser**
 
 ---
 
@@ -228,4 +193,4 @@ SIH Hackathon 2025/
 **Your complete working prototype is ready!**
 Open `farmtrace_complete.html` in Chrome and experience the full FarmTrace system with all 11 user types and complete functionality.
 
-**Perfect for SIH 2025 presentation and judging!** 🏆
+**Perfect for presentation and judging!** 🏆
