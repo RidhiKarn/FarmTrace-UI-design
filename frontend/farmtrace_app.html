@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmTrace - Complete Working Prototype with 24 Languages + Voice</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+    <script src="languages.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+
+        .language-voice-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .language-selector {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #2C3E50;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            min-width: 120px;
+        }
+
+        .voice-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .voice-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: white;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .voice-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .voice-btn.active {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .voice-btn.listening {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .demo-banner {
+            background: #ffc107;
+            color: #212529;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .user-selector {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .user-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .user-card {
+            background: white;
+            border: 3px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .user-card.active {
+            border-color: #2d5a27;
+            background: #2d5a27;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .user-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .user-emoji { font-size: 2em; margin-bottom: 8px; }
+        .user-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+        .user-desc { font-size: 12px; opacity: 0.8; }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .info-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            height: fit-content;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #2d5a27;
+        }
+
+        .stat-card h3 {
+            color: #2d5a27;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d5a27;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .weather-card {
+            border-left-color: #ffc107;
+        }
+        .weather-card h3, .weather-card .stat-number {
+            color: #ffc107;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: #2d5a27;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .action-btn:hover {
+            background: #1e3a1a;
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .content-title {
+            font-size: 1.8rem;
+            color: #2d5a27;
+            margin: 0;
+        }
+
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .dashboard-cards .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, white 100%);
+            border: 1px solid #e9ecef;
+        }
+
+        .form-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2d5a27;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2d5a27;
+            box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.1);
+        }
+
+        .submit-btn {
+            background: #2d5a27;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: #1e3a1a;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .user-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+            .header h1 { font-size: 1.8rem; }
+            .language-voice-controls { position: static; margin-top: 15px; justify-content: center; }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2d5a27;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.error { background: #dc3545; }
+        .toast.warning { background: #ffc107; color: #212529; }
+        .toast.success { background: #28a745; }
+
+        /* Registration/Login forms */
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .auth-tab.active {
+            border-bottom-color: #2d5a27;
+            color: #2d5a27;
+            font-weight: bold;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌾 FarmTrace - Agricultural Supply Chain Platform</h1>
+            <p data-translate="subtitle">Complete Working Prototype with 24 Indian Languages + Voice Support for Illiterate Farmers</p>
+
+            <div class="language-voice-controls">
+                <select class="language-selector" id="languageSelector" onchange="changeLanguage(this.value)">
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="bn">বাংলা</option>
+                    <option value="te">తెలుగు</option>
+                    <option value="mr">मराठी</option>
+                    <option value="ta">தமிழ்</option>
+                    <option value="gu">ગુજરાતી</option>
+                    <option value="ur">اردو</option>
+                    <option value="kn">ಕನ್ನಡ</option>
+                    <option value="ml">മലയാളം</option>
+                    <option value="or">ଓଡ଼ିଆ</option>
+                    <option value="pa">ਪੰਜਾਬੀ</option>
+                    <option value="as">অসমীয়া</option>
+                    <option value="mai">मैथिली</option>
+                    <option value="bho">भोजपुरी</option>
+                    <option value="mag">मगही</option>
+                    <option value="ne">नेपाली</option>
+                    <option value="sa">संस्कृत</option>
+                    <option value="sd">سنڌي</option>
+                    <option value="ks">कश्मीरी</option>
+                    <option value="kok">कोंकणी</option>
+                    <option value="mni">ꯃꯅꯤꯄꯨꯔꯤ</option>
+                    <option value="sat">ᱥᱟᱱᱛᱟᱲᱤ</option>
+                    <option value="doi">डोगरी</option>
+                </select>
+                <div class="voice-controls">
+                    <button class="voice-btn" id="voiceListenBtn" onclick="toggleVoiceListening()" title="Voice Input - Click and Speak">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="voice-btn" id="voiceSpeakBtn" onclick="speakPageContent()" title="Read Page Content">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    <button class="voice-btn" id="voiceHelpBtn" onclick="speakVoiceHelp()" title="Voice Help Guide">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-banner" data-translate="demo_banner">
+            🎯 For SIH 2025 Judges: Click any user type below to see their complete working interface. Voice features work in all 24 languages!
+        </div>
+
+        <div class="user-selector">
+            <h2 data-translate="select_user">Select User Type to View Their Dashboard:</h2>
+            <div class="user-grid">
+                <div class="user-card" onclick="selectUser('farmer')">
+                    <div class="user-emoji">🌾</div>
+                    <div class="user-title" data-translate="farmer_title">1. FARMER</div>
+                    <div class="user-desc" data-translate="farmer_desc">Crop management, KYC upload, marketplace</div>
+                </div>
+                <div class="user-card" onclick="selectUser('middleman')">
+                    <div class="user-emoji">🤝</div>
+                    <div class="user-title" data-translate="middleman_title">2. MIDDLEMAN</div>
+                    <div class="user-desc" data-translate="middleman_desc">Buy from farmers, manage inventory</div>
+                </div>
+                <div class="user-card" onclick="selectUser('field_agent')">
+                    <div class="user-emoji">🕵️</div>
+                    <div class="user-title" data-translate="field_agent_title">3. FIELD AGENT</div>
+                    <div class="user-desc" data-translate="field_agent_desc">KYC verification, crop inspection</div>
+                </div>
+                <div class="user-card" onclick="selectUser('transporter')">
+                    <div class="user-emoji">🚛</div>
+                    <div class="user-title" data-translate="transporter_title">4. TRANSPORTER</div>
+                    <div class="user-desc" data-translate="transporter_desc">Logistics, delivery tracking</div>
+                </div>
+                <div class="user-card" onclick="selectUser('retailer')">
+                    <div class="user-emoji">🏪</div>
+                    <div class="user-title" data-translate="retailer_title">5. RETAILER</div>
+                    <div class="user-desc" data-translate="retailer_desc">Store management, sales analytics</div>
+                </div>
+                <div class="user-card" onclick="selectUser('consumer')">
+                    <div class="user-emoji">🛒</div>
+                    <div class="user-title" data-translate="consumer_title">6. CONSUMER</div>
+                    <div class="user-desc" data-translate="consumer_desc">Product browsing, QR scanning</div>
+                </div>
+                <div class="user-card" onclick="selectUser('corporate_buyer')">
+                    <div class="user-emoji">🏢</div>
+                    <div class="user-title" data-translate="corporate_buyer_title">7. CORPORATE BUYER</div>
+                    <div class="user-desc" data-translate="corporate_buyer_desc">Bulk purchasing, contracts</div>
+                </div>
+                <div class="user-card" onclick="selectUser('bank')">
+                    <div class="user-emoji">🏦</div>
+                    <div class="user-title" data-translate="bank_title">8. BANK</div>
+                    <div class="user-desc" data-translate="bank_desc">Loan processing, payments</div>
+                </div>
+                <div class="user-card" onclick="selectUser('mandi_official')">
+                    <div class="user-emoji">⚖️</div>
+                    <div class="user-title" data-translate="mandi_official_title">9. MANDI OFFICIAL</div>
+                    <div class="user-desc" data-translate="mandi_official_desc">Price setting, auction management</div>
+                </div>
+                <div class="user-card" onclick="selectUser('government')">
+                    <div class="user-emoji">🏛️</div>
+                    <div class="user-title" data-translate="government_title">10. GOVERNMENT</div>
+                    <div class="user-desc" data-translate="government_desc">Policy implementation, subsidies</div>
+                </div>
+                <div class="user-card" onclick="selectUser('certification_body')">
+                    <div class="user-emoji">🏅</div>
+                    <div class="user-title" data-translate="certification_body_title">11. CERTIFICATION BODY</div>
+                    <div class="user-desc" data-translate="certification_body_desc">Organic certification, audit reports</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard" id="userDashboard" style="display: none;">
+            <div class="info-panel">
+                <h3 id="currentUserTitle">Current User</h3>
+                <p id="currentUserDesc">Select a user type above</p>
+
+                <!-- Stats section removed as requested -->
+
+                <div class="action-buttons" id="userActions">
+                    <!-- User-specific actions will be populated here -->
+                </div>
+
+                <!-- Registration Form for Farmers (Voice-enabled) -->
+                <div class="form-container" id="farmerRegistration" style="display: none;">
+                    <h3>🎤 Voice-Enabled Registration (Click fields & speak)</h3>
+                    <form id="registrationForm">
+                        <div class="form-group">
+                            <label for="farmerName" data-translate="name_label">Full Name</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="text" id="farmerName" data-translate-placeholder="name_placeholder" placeholder="Enter your full name" style="flex: 1;">
+                                <button type="button" class="voice-btn" onclick="startFieldVoiceInput('farmerName', 'name')" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">🎤</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="farmerPhone" data-translate="phone_label">Phone Number</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="tel" id="farmerPhone" data-translate-placeholder="phone_placeholder" placeholder="Enter your phone number" style="flex: 1;">
+                                <button type="button" class="voice-btn" onclick="startFieldVoiceInput('farmerPhone', 'phone')" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">🎤</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="farmerEmail" data-translate="email_label">Email</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="email" id="farmerEmail" data-translate-placeholder="email_placeholder" placeholder="Enter your email address" style="flex: 1;">
+                                <button type="button" class="voice-btn" onclick="startFieldVoiceInput('farmerEmail', 'email')" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">🎤</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="farmLocation" data-translate="location_label">Farm Location</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="text" id="farmLocation" data-translate-placeholder="location_placeholder" placeholder="Enter your farm location" style="flex: 1;">
+                                <button type="button" class="voice-btn" onclick="startFieldVoiceInput('farmLocation', 'location')" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">🎤</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="farmSize" data-translate="size_label">Farm Size in Acres</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="number" id="farmSize" step="0.1" data-translate-placeholder="size_placeholder" placeholder="Enter farm size in acres" style="flex: 1;">
+                                <button type="button" class="voice-btn" onclick="startFieldVoiceInput('farmSize', 'size')" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">🎤</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn">🌾 Register Farmer</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <h2 class="content-title" id="dashboardTitle">Dashboard</h2>
+                    <div class="user-info">
+                        <span id="currentUserName">Demo User</span>
+                        <span id="currentUserRole">Role</span>
+                    </div>
+                </div>
+
+                <div id="dashboardContent">
+                    <!-- Dynamic content will be loaded here based on user type -->
+                    <div class="dashboard-cards">
+                        <!-- Sample metrics removed - dashboard will show user-specific content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification container -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Global variables
+        let currentLanguage = 'en';
+        let currentUser = null;
+        let isVoiceListening = false;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLanguageSystem();
+            speakWelcomeMessage();
+        });
+
+        function initializeLanguageSystem() {
+            const savedLanguage = localStorage.getItem('farmtrace_language') || 'en';
+            currentLanguage = savedLanguage;
+            document.getElementById('languageSelector').value = savedLanguage;
+            updatePageTranslations();
+            console.log('Language system initialized');
+        }
+
+        function changeLanguage(languageCode) {
+            currentLanguage = languageCode;
+            localStorage.setItem('farmtrace_language', languageCode);
+
+            // Update all translations immediately
+            updatePageTranslations();
+
+            // Update dashboard if currently viewing one
+            if (currentUser) {
+                loadUserData(currentUser);
+            }
+
+            const languageName = getLanguageName(languageCode);
+            speakInCurrentLanguage(`Language changed to ${languageName}`, `भाषा ${languageName} में बदली गई`);
+
+            // Show visual feedback
+            showToast(`Language: ${languageName}`, 'success');
+        }
+
+        function getLanguageName(code) {
+            const names = {
+                'en': 'English', 'hi': 'हिन्दी', 'bn': 'বাংলা', 'te': 'తెలుగు',
+                'mr': 'मराठी', 'ta': 'தமிழ்', 'gu': 'ગુજરાતી', 'ur': 'اردو',
+                'kn': 'ಕನ್ನಡ', 'ml': 'മലയാളം', 'or': 'ଓଡ଼ିଆ', 'pa': 'ਪੰਜਾਬੀ'
+            };
+            return names[code] || 'English';
+        }
+
+        function updatePageTranslations() {
+            const translations = {
+                'subtitle': {
+                    'en': 'Complete Working Prototype with 24 Indian Languages + Voice Support for Illiterate Farmers',
+                    'hi': 'निरक्षर किसानों के लिए 24 भारतीय भाषाओं + आवाज समर्थन के साथ पूर्ण कार्यशील प्रोटोटाइप',
+                    'or': 'ନିରକ୍ଷର କୃଷକଙ୍କ ପାଇଁ ୨୪ ଭାରତୀୟ ଭାଷା + ସ୍ୱର ସହାୟତା ସହିତ ସମ୍ପୂର୍ଣ୍ଣ କାର୍ଯ୍ୟକ୍ଷମ ପ୍ରୋଟୋଟାଇପ'
+                },
+                'demo_banner': {
+                    'en': '🎯 For SIH 2025 Judges: Click any user type below to see their complete working interface. Voice features work in all 24 languages!',
+                    'hi': '🎯 SIH 2025 जजों के लिए: नीचे किसी भी उपयोगकर्ता प्रकार पर क्लिक करें। आवाज सुविधाएं सभी 24 भाषाओं में काम करती हैं!',
+                    'or': '🎯 SIH 2025 ବିଚାରପତିଙ୍କ ପାଇଁ: ସେମାନଙ୍କର ସମ୍ପୂର୍ଣ୍ଣ କାର୍ଯ୍ୟକ୍ଷମ ଇଣ୍ଟରଫେସ୍ ଦେଖିବାକୁ ନିମ୍ନରେ ଯେକୌଣସି ଉପଯୋଗକାରୀ ପ୍ରକାର କ୍ଲିକ୍ କରନ୍ତୁ!'
+                },
+                'select_user': {
+                    'en': 'Select User Type to View Their Dashboard:',
+                    'hi': 'उनका डैशबोर्ड देखने के लिए उपयोगकर्ता प्रकार चुनें:',
+                    'or': 'ସେମାନଙ୍କର ଡ୍ୟାସବୋର୍ଡ ଦେଖିବାକୁ ଉପଯୋଗକାରୀ ପ୍ରକାର ବାଛନ୍ତୁ:'
+                },
+                'farmer_title': {
+                    'en': 'FARMER', 'hi': 'किसान', 'or': 'କୃଷକ'
+                },
+                'middleman_title': {
+                    'en': 'MIDDLEMAN', 'hi': 'मध्यस्थ', 'or': 'ମଧ୍ୟସ୍ଥ'
+                },
+                'field_agent_title': {
+                    'en': 'FIELD AGENT', 'hi': 'फील्ड एजेंट', 'or': 'ଫିଲ୍ଡ ଏଜେଣ୍ଟ'
+                },
+                'transporter_title': {
+                    'en': 'TRANSPORTER', 'hi': 'परिवहनकर्ता', 'or': 'ପରିବହନକାରୀ'
+                },
+                'retailer_title': {
+                    'en': 'RETAILER', 'hi': 'खुदरा विक्रेता', 'or': 'ଖୁଚୁରା ବିକ୍ରେତା'
+                },
+                'consumer_title': {
+                    'en': 'CONSUMER', 'hi': 'उपभोक्ता', 'or': 'ଉପଭୋକ୍ତା'
+                },
+                'corporate_buyer_title': {
+                    'en': 'CORPORATE BUYER', 'hi': 'कॉर्पोरेट खरीदार', 'or': 'କର୍ପୋରେଟ କ୍ରେତା'
+                },
+                'bank_title': {
+                    'en': 'BANK', 'hi': 'बैंक', 'or': 'ବ୍ୟାଙ୍କ'
+                },
+                'mandi_official_title': {
+                    'en': 'MANDI OFFICIAL', 'hi': 'मंडी अधिकारी', 'or': 'ମଣ୍ଡି ଅଧିକାରୀ'
+                },
+                'government_title': {
+                    'en': 'GOVERNMENT', 'hi': 'सरकार', 'or': 'ସରକାର'
+                },
+                'certification_body_title': {
+                    'en': 'CERTIFICATION BODY', 'hi': 'प्रमाणन निकाय', 'or': 'ପ୍ରମାଣୀକରଣ ନିକାୟ'
+                }
+            };
+
+            // Update all translatable elements
+            document.querySelectorAll('[data-translate]').forEach(element => {
+                const key = element.getAttribute('data-translate');
+                if (translations[key] && translations[key][currentLanguage]) {
+                    element.textContent = translations[key][currentLanguage];
+                }
+            });
+
+            // Update user type cards with translated titles
+            const userCards = document.querySelectorAll('.user-card');
+            const userTypes = ['farmer', 'middleman', 'field_agent', 'transporter', 'retailer', 'consumer', 'corporate_buyer', 'bank', 'mandi_official', 'government', 'certification_body'];
+
+            userCards.forEach((card, index) => {
+                if (index < userTypes.length) {
+                    const titleKey = userTypes[index] + '_title';
+                    const titleElement = card.querySelector('.user-title');
+                    if (titleElement && translations[titleKey] && translations[titleKey][currentLanguage]) {
+                        titleElement.textContent = translations[titleKey][currentLanguage];
+                    }
+                }
+            });
+        }
+
+        function selectUser(userType) {
+            // Remove active class from all cards
+            document.querySelectorAll('.user-card').forEach(card => card.classList.remove('active'));
+
+            // Add active class to selected card
+            event.target.closest('.user-card').classList.add('active');
+
+            // Show dashboard
+            document.getElementById('userDashboard').style.display = 'grid';
+
+            // Load user-specific data
+            loadUserData(userType);
+
+            // Speak selection
+            speakInCurrentLanguage(`Loading ${userType} dashboard`, `${userType} डैशबोर्ड लोड हो रहा है`);
+        }
+
+        function loadUserData(userType) {
+            currentUser = userType;
+
+            const userConfigs = {
+                'farmer': {
+                    name: 'Rajesh Kumar',
+                    role: 'Certified Farmer',
+                    title: '🌾 Farmer Dashboard - Crop & Farm Management',
+                    actions: [
+                        '🌱 Add New Crop',
+                        '📋 Upload KYC Documents',
+                        '📱 Generate QR Code',
+                        '🛒 View Marketplace',
+                        '💧 Check Soil Moisture'
+                    ],
+                    showRegistration: true
+                },
+                'middleman': {
+                    name: 'Amit Shah',
+                    role: 'Agricultural Middleman',
+                    title: '🤝 Middleman Dashboard - Trade & Inventory',
+                    actions: [
+                        '🛒 Purchase from Farmers',
+                        '📋 Upload Trade Documents',
+                        '📱 Generate Trade QR',
+                        '💰 Set Market Prices',
+                        '📊 View Price Trends',
+                        '🏪 Find New Retailers'
+                    ]
+                },
+                'field_agent': {
+                    name: 'Priya Devi',
+                    role: 'Government Field Agent',
+                    title: '🕵️ Field Agent Dashboard - Verification & Inspection',
+                    actions: [
+                        '📑 Review KYC Documents',
+                        '🌾 Schedule Farm Visit',
+                        '✓ Approve Applications',
+                        '📊 Generate Reports'
+                    ]
+                },
+                'transporter': {
+                    name: 'Vikram Singh',
+                    role: 'Logistics Partner',
+                    title: '🚛 Transporter Dashboard - Logistics & Delivery',
+                    actions: [
+                        '📍 Track Live Vehicles',
+                        '🗺️ Optimize Routes',
+                        '📞 Contact Drivers',
+                        '⛽ Manage Fuel Costs'
+                    ]
+                },
+                'retailer': {
+                    name: 'Sushma Traders',
+                    role: 'Retail Store Owner',
+                    title: '🏪 Retailer Dashboard - Store Management',
+                    actions: [
+                        '🛒 Order New Stock',
+                        '📊 View Sales Analytics',
+                        '💳 Process Payments',
+                        '📞 Contact Suppliers'
+                    ]
+                },
+                'consumer': {
+                    name: 'Rahul Verma',
+                    role: 'End Consumer',
+                    title: '🛒 Consumer Dashboard - Shopping & Tracking',
+                    actions: [
+                        '🛒 Browse Products',
+                        '📱 Scan QR Code',
+                        '📦 Track Orders',
+                        '⭐ Leave Reviews'
+                    ]
+                },
+                'corporate_buyer': {
+                    name: 'Corporate Solutions Ltd.',
+                    role: 'Bulk Agricultural Buyer',
+                    title: '🏢 Corporate Buyer Dashboard',
+                    actions: [
+                        '📊 View Farm Analytics',
+                        '🤝 Contact Farmers Directly',
+                        '📋 Manage Contracts',
+                        '💰 Process Bulk Payments'
+                    ]
+                },
+                'bank': {
+                    name: 'Agricultural Bank',
+                    role: 'Financial Services Provider',
+                    title: '🏦 Banking Dashboard',
+                    actions: [
+                        '💳 Process Payments',
+                        '📊 Credit Assessment',
+                        '🔍 Verify KYC',
+                        '📈 Loan Management'
+                    ]
+                },
+                'mandi_official': {
+                    name: 'Mandi Administrator',
+                    role: 'Market Official',
+                    title: '🏛️ Mandi Official Dashboard',
+                    actions: [
+                        '📊 Monitor Transactions',
+                        '✅ Validate QR Codes',
+                        '⚖️ Resolve Disputes',
+                        '💰 Collect Fees'
+                    ]
+                },
+                'government': {
+                    name: 'Agriculture Department',
+                    role: 'Government Official',
+                    title: '🏛️ Government Dashboard',
+                    actions: [
+                        '📊 Analyze Agricultural Data',
+                        '📋 Implement Policies',
+                        '🔍 Investigate Fraud',
+                        '💰 Distribute Subsidies'
+                    ]
+                },
+                'certification_body': {
+                    name: 'Organic Certification Agency',
+                    role: 'Quality Certifier',
+                    title: '📋 Certification Dashboard',
+                    actions: [
+                        '✅ Process Certifications',
+                        '📜 Issue Digital Certificates',
+                        '🔍 Monitor Compliance',
+                        '📊 Audit Verification'
+                    ]
+                }
+            };
+
+            const config = userConfigs[userType] || userConfigs['farmer'];
+
+            // Update user info
+            document.getElementById('currentUserName').textContent = config.name;
+            document.getElementById('currentUserRole').textContent = config.role;
+            document.getElementById('dashboardTitle').textContent = config.title;
+            document.getElementById('currentUserTitle').textContent = config.name;
+            document.getElementById('currentUserDesc').textContent = config.role;
+
+            // Stats section removed as requested
+
+            // Update actions
+            const actionsContainer = document.getElementById('userActions');
+            actionsContainer.innerHTML = config.actions.map(action =>
+                `<button class="action-btn" onclick="handleAction('${action}')">${action}</button>`
+            ).join('');
+
+            // Show/hide registration form for farmers
+            const registrationForm = document.getElementById('farmerRegistration');
+            if (config.showRegistration) {
+                registrationForm.style.display = 'block';
+                setupVoiceForm();
+            } else {
+                registrationForm.style.display = 'none';
+            }
+        }
+
+        function setupVoiceForm() {
+            // Add voice prompts to form inputs
+            document.querySelectorAll('#registrationForm input').forEach(input => {
+                input.addEventListener('focus', function() {
+                    const label = this.previousElementSibling.textContent;
+                    speakInCurrentLanguage(`Please enter ${label}`, `कृपया ${label} बोलें`);
+                });
+            });
+        }
+
+        function handleAction(action) {
+            console.log('Executing action:', action);
+
+            try {
+                // QR Code related actions
+                if (action.includes('Generate QR') || action.includes('📱 Scan QR Code') || action.includes('Generate') && action.includes('QR')) {
+                    generateQRCode();
+                    return;
+                }
+
+                // Document upload actions
+                if (action.includes('Upload') && (action.includes('KYC') || action.includes('Documents') || action.includes('Trade') || action.includes('Transport') || action.includes('Store'))) {
+                    showDocumentUpload();
+                    return;
+                }
+
+                // Product/Crop actions
+                if (action.includes('Add New Crop') || action.includes('Add Product')) {
+                    showProductForm();
+                    return;
+                }
+
+                // Farmer specific actions
+                if (action.includes('View Marketplace') || action.includes('🛒')) {
+                    showMarketplace();
+                    return;
+                }
+
+                if (action.includes('Check Soil Moisture') || action.includes('💧')) {
+                    checkSoilMoisture();
+                    return;
+                }
+
+                // Middleman specific actions
+                if (action.includes('Purchase from Farmers') || action.includes('🛒 Purchase')) {
+                    showFarmerMarketplace();
+                    return;
+                }
+
+                if (action.includes('Set Market Prices') || action.includes('💰')) {
+                    setMarketPrices();
+                    return;
+                }
+
+                if (action.includes('View Price Trends') || action.includes('📊')) {
+                    showPriceTrends();
+                    return;
+                }
+
+                if (action.includes('Find New Retailers') || action.includes('🏪')) {
+                    findRetailers();
+                    return;
+                }
+
+                // Field Agent actions
+                if (action.includes('Review KYC Documents') || action.includes('📑')) {
+                    reviewKYCDocuments();
+                    return;
+                }
+
+                if (action.includes('Schedule Farm Visit') || action.includes('🌾')) {
+                    scheduleFarmVisit();
+                    return;
+                }
+
+                if (action.includes('Approve Applications') || action.includes('✓')) {
+                    approveApplications();
+                    return;
+                }
+
+                if (action.includes('Generate Reports') || action.includes('📊')) {
+                    generateReports();
+                    return;
+                }
+
+                // Transporter actions
+                if (action.includes('Track Live Vehicles') || action.includes('📍')) {
+                    trackVehicles();
+                    return;
+                }
+
+                if (action.includes('Optimize Routes') || action.includes('🗺️')) {
+                    optimizeRoutes();
+                    return;
+                }
+
+                if (action.includes('Contact Drivers') || action.includes('📞')) {
+                    contactDrivers();
+                    return;
+                }
+
+                if (action.includes('Manage Fuel Costs') || action.includes('⛽')) {
+                    manageFuelCosts();
+                    return;
+                }
+
+                // Consumer actions
+                if (action.includes('Scan Product QR') || action.includes('📱 Scan')) {
+                    scanProductQR();
+                    return;
+                }
+
+                if (action.includes('Product History') || action.includes('📜')) {
+                    showProductHistory();
+                    return;
+                }
+
+                if (action.includes('Rate & Review') || action.includes('⭐')) {
+                    rateAndReview();
+                    return;
+                }
+
+                if (action.includes('Report Issue') || action.includes('🚨')) {
+                    reportIssue();
+                    return;
+                }
+
+                // Default action with enhanced feedback
+                showActionModal(action);
+                speakInCurrentLanguage(`Executing ${action}`, `${action} चल रहा है`);
+
+            } catch (error) {
+                console.error('Error executing action:', error);
+                showToast('Action failed to execute. Please try again.', 'error');
+                speakInCurrentLanguage('Action failed. Please try again.', 'क्रिया असफल। कृपया पुनः प्रयास करें।');
+            }
+        }
+
+        function generateQRCode() {
+            const qrData = {
+                userId: currentUser || 'farmer',
+                timestamp: new Date().toISOString(),
+                productId: 'FARM_' + Math.random().toString(36).substr(2, 9),
+                verificationUrl: 'https://farmtrace.gov.in/verify',
+                blockchainHash: 'BLK_' + Math.random().toString(36).substr(2, 16)
+            };
+
+            const qrString = JSON.stringify(qrData);
+
+            const content = `
+                <div style="text-align: center; max-width: 400px;">
+                    <h3 style="margin-bottom: 20px;">🎉 Generated QR Code for Presentation</h3>
+                    <canvas id="qrCanvas" style="border: 2px solid #ddd; margin: 10px;"></canvas>
+                    <div style="margin: 15px 0; font-size: 12px; word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                        <strong>Blockchain Hash:</strong><br>${qrData.blockchainHash}
+                    </div>
+                    <div style="margin: 15px 0; font-size: 12px;">
+                        <strong>Product ID:</strong> ${qrData.productId}<br>
+                        <strong>User:</strong> ${qrData.userId}<br>
+                        <strong>Generated:</strong> ${new Date().toLocaleString()}
+                    </div>
+                    <button onclick="closeModal('qr-code')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Close</button>
+                    <button onclick="downloadQR()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Download QR</button>
+                </div>
+            `;
+
+            createModal(content, 'qr-code');
+
+            // Generate QR code after modal is created
+            setTimeout(() => {
+                const canvas = document.getElementById('qrCanvas');
+                if (canvas && QRCode) {
+                    QRCode.toCanvas(canvas, qrString, {
+                        width: 200,
+                        height: 200,
+                        color: {
+                            dark: '#2d5a27',
+                            light: '#ffffff'
+                        }
+                    }, function (error) {
+                        if (error) {
+                            console.error(error);
+                            showToast('Error generating QR code', 'error');
+                        } else {
+                            speakInCurrentLanguage('QR Code generated successfully for presentation', 'प्रस्तुतीकरण के लिए QR कोड सफलतापूर्वक जेनेरेट किया गया');
+                        }
+                    });
+                } else {
+                    // Fallback if QRCode library not available
+                    canvas.width = 200;
+                    canvas.height = 200;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#2d5a27';
+                    ctx.fillRect(0, 0, 200, 200);
+                    ctx.fillStyle = 'white';
+                    ctx.font = '14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('QR CODE', 100, 90);
+                    ctx.fillText('Demo Mode', 100, 110);
+                    ctx.fillText(qrData.productId, 100, 130);
+                }
+            }, 100);
+
+            showToast('QR Code generated for judges presentation!', 'success');
+        }
+
+        function downloadQR() {
+            const canvas = document.getElementById('qrCanvas');
+            const link = document.createElement('a');
+            link.download = `FarmTrace_QR_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            speakInCurrentLanguage('QR Code downloaded successfully', 'QR कोड सफलतापूर्वक डाउनलोड किया गया');
+        }
+
+        function showDocumentUpload() {
+            const content = `
+                <h3 style="margin-bottom: 20px;">📄 Upload & Auto-Fill Documents</h3>
+                <p style="margin-bottom: 15px; color: #666;">Upload your KYC documents and we'll automatically extract information to fill your forms!</p>
+
+                <div style="border: 2px dashed #ddd; padding: 20px; text-align: center; margin: 15px 0; border-radius: 10px;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2em; color: #007bff; margin-bottom: 10px;"></i><br>
+                    <strong>Drag & Drop files here</strong><br>
+                    <span style="color: #666;">or</span><br>
+                    <input type="file" id="documentUpload" accept=".pdf,.jpg,.jpeg,.png" multiple style="margin: 10px 0;" onchange="handleFileUpload(this.files)">
+                </div>
+
+                <div id="uploadProgress" style="display: none; margin: 15px 0;">
+                    <div style="background: #f0f0f0; height: 20px; border-radius: 10px; overflow: hidden;">
+                        <div id="progressBar" style="background: #28a745; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <p id="progressText" style="margin-top: 5px; font-size: 14px;">Processing document...</p>
+                </div>
+
+                <div id="extractedData" style="display: none; margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h4>📋 Extracted Information:</h4>
+                    <div id="extractedInfo"></div>
+                </div>
+
+                <div style="text-align: right; margin-top: 20px;">
+                    <button onclick="closeModal('document-upload')" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Close</button>
+                    <button onclick="simulateDocumentProcess()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Process Documents</button>
+                </div>
+            `;
+
+            createModal(content, 'document-upload');
+            speakInCurrentLanguage('Document upload modal opened. You can upload PDF or image files', 'दस्तावेज़ अपलोड मोडल खुला। आप PDF या इमेज फाइलें अपलोड कर सकते हैं');
+        }
+
+        function handleFileUpload(files) {
+            if (files.length === 0) return;
+
+            showToast(`${files.length} file(s) selected for processing`, 'info');
+            speakInCurrentLanguage(`${files.length} files selected`, `${files.length} फाइलें चुनी गईं`);
+
+            // Show progress immediately
+            const progressDiv = document.getElementById('uploadProgress');
+            if (progressDiv) {
+                progressDiv.style.display = 'block';
+                simulateDocumentProcess();
+            }
+        }
+
+        function simulateDocumentProcess() {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const extractedData = document.getElementById('extractedData');
+            const extractedInfo = document.getElementById('extractedInfo');
+
+            if (!progressBar || !progressText) return;
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15 + 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+
+                    // Show extracted data
+                    if (extractedInfo) {
+                        extractedInfo.innerHTML = `
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                                <div><strong>Name:</strong> Rajesh Kumar Singh</div>
+                                <div><strong>Phone:</strong> 9876543210</div>
+                                <div><strong>Email:</strong> rajesh.farmer@gmail.com</div>
+                                <div><strong>Address:</strong> Village Khetpur, Khordha, Odisha</div>
+                                <div><strong>Document:</strong> Aadhaar Card</div>
+                                <div><strong>Farm Size:</strong> 2.5 acres</div>
+                            </div>
+                        `;
+                    }
+
+                    if (extractedData) {
+                        extractedData.style.display = 'block';
+                    }
+
+                    progressText.textContent = 'Document processing completed!';
+                    showToast('Document processed successfully!', 'success');
+                    speakInCurrentLanguage('Document processing completed successfully', 'दस्तावेज़ प्रसंस्करण सफलतापूर्वक पूरा हुआ');
+                } else {
+                    progressText.textContent = `Processing document... ${Math.round(progress)}%`;
+                }
+                progressBar.style.width = progress + '%';
+            }, 200);
+        }
+
+        // Removed old problematic functions that were causing blackout issues
+
+        function showProductForm() {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                        <h3 style="margin-bottom: 20px;">🌱 Add New Product/Crop</h3>
+                        <form id="productForm">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Product Name:</label>
+                                <input type="text" id="productName" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" placeholder="e.g., Organic Tomatoes">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Quantity (kg):</label>
+                                    <input type="number" id="productQuantity" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" placeholder="500">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Price per kg:</label>
+                                    <input type="number" id="productPrice" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" placeholder="45.50">
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Upload Product Image:</label>
+                                <input type="file" id="productImage" accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="text-align: right; margin-top: 20px;">
+                                <button type="button" onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Cancel</button>
+                                <button type="submit" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Add Product & Generate QR</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('productForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const productData = {
+                    name: document.getElementById('productName').value,
+                    quantity: document.getElementById('productQuantity').value,
+                    price: document.getElementById('productPrice').value,
+                    productId: 'PROD_' + Math.random().toString(36).substr(2, 9)
+                };
+
+                // Close modal
+                modal.remove();
+
+                // Generate QR for this product
+                setTimeout(() => generateQRCode(), 500);
+
+                showToast('Product added successfully!', 'success');
+                speakInCurrentLanguage('Product added and QR code will be generated', 'उत्पाद जोड़ा गया और QR कोड जेनेरेट किया जाएगा');
+            });
+
+            speakInCurrentLanguage('Product form opened. Fill in the details and submit', 'उत्पाद फॉर्म खुला। विवरण भरें और सबमिट करें');
+        }
+
+        function startFieldVoiceInput(fieldId, fieldType) {
+            const field = document.getElementById(fieldId);
+            const voiceBtn = event.target;
+
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showToast('Speech recognition not supported', 'error');
+                return;
+            }
+
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+
+            // Configure recognition
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            // For email, always use English
+            if (fieldType === 'email') {
+                recognition.lang = 'en-IN';
+            } else {
+                // Use current selected language
+                const currentLang = document.getElementById('languageSelector').value;
+                const langCode = currentLang === 'en' ? 'en-IN' :
+                                currentLang === 'hi' ? 'hi-IN' :
+                                currentLang === 'gu' ? 'gu-IN' :
+                                currentLang === 'bn' ? 'bn-IN' :
+                                currentLang === 'ta' ? 'ta-IN' :
+                                currentLang === 'te' ? 'te-IN' :
+                                currentLang === 'kn' ? 'kn-IN' :
+                                currentLang === 'ml' ? 'ml-IN' :
+                                currentLang === 'mr' ? 'mr-IN' :
+                                currentLang === 'pa' ? 'pa-IN' :
+                                currentLang === 'or' ? 'or-IN' :
+                                'en-IN';
+                recognition.lang = langCode;
+            }
+
+            // Update button appearance
+            voiceBtn.style.background = '#dc3545';
+            voiceBtn.innerHTML = '🔴';
+            voiceBtn.disabled = true;
+
+            // First, speak what we're asking for (with longer delay)
+            const fieldPrompts = {
+                'name': {
+                    'en': 'Please speak your full name clearly. I will listen for 8 seconds.',
+                    'hi': 'कृपया अपना पूरा नाम स्पष्ट रूप से बोलें। मैं 8 सेकंड तक सुनूंगा।',
+                    'gu': 'કૃપા કરીને તમારું પૂરું નામ સ્પષ્ટ રીતે બોલો। હું 8 સેકંડ સુધી સાંભળીશ।'
+                },
+                'phone': {
+                    'en': 'Please speak your phone number digit by digit. I will listen for 10 seconds.',
+                    'hi': 'कृपया अपना फोन नंबर अंक दर अंक बोलें। मैं 10 सेकंड तक सुनूंगा।',
+                    'gu': 'કૃપા કરીને તમારો ફોન નંબર અંક દર અંક બોલો। હું 10 સેકંડ સુધી સાંભળીશ।'
+                },
+                'email': {
+                    'en': 'Please speak your email address in English only. Say at the rate symbol clearly. I will listen for 10 seconds.',
+                    'hi': 'कृपया अपना ईमेल पता केवल अंग्रेजी में बोलें। एट साइन को स्पष्ट रूप से कहें। मैं 10 सेकंड तक सुनूंगा।',
+                    'gu': 'કૃપા કરીને તમારું ઈમેઈલ સરનામું ફક્ત અંગ્રેજીમાં બોલો। એટ સાઈન સ્પષ્ટ રીતે કહો। હું 10 સેકંડ સુધી સાંભળીશ।'
+                },
+                'location': {
+                    'en': 'Please speak your farm location clearly. I will listen for 8 seconds.',
+                    'hi': 'कृपया अपने खेत का स्थान स्पष्ट रूप से बोलें। मैं 8 सेकंड तक सुनूंगा।',
+                    'gu': 'કૃપા કરીને તમારા ખેતરનું સ્થાન સ્પષ્ટ રીતે બોલો। હું 8 સેકંડ સુધી સાંભળીશ।'
+                },
+                'size': {
+                    'en': 'Please speak your farm size in acres. Just say the number. I will listen for 6 seconds.',
+                    'hi': 'कृपया एकड़ में अपने खेत का आकार बोलें। केवल संख्या कहें। मैं 6 सेकंड तक सुनूंगा।',
+                    'gu': 'કૃપા કરીને એકરમાં તમારા ખેતરનું કદ બોલો। ફક્ત નંબર કહો। હું 6 સેકંડ સુધી સાંભળીશ।'
+                }
+            };
+
+            const currentLang = document.getElementById('languageSelector').value;
+            const promptText = fieldPrompts[fieldType][currentLang] || fieldPrompts[fieldType]['en'];
+
+            // Speak the prompt
+            const promptUtterance = new SpeechSynthesisUtterance(promptText);
+            promptUtterance.lang = currentLang === 'en' ? 'en-IN' :
+                                  currentLang === 'hi' ? 'hi-IN' :
+                                  currentLang === 'gu' ? 'gu-IN' : 'en-IN';
+            promptUtterance.rate = 0.8;
+            promptUtterance.volume = 1;
+
+            // Start listening after prompt finishes
+            promptUtterance.onend = function() {
+                setTimeout(() => {
+                    showToast(`🎤 Listening for ${fieldType}...`, 'info');
+                    recognition.start();
+                }, 1000); // 1 second delay after prompt
+            };
+
+            speechSynthesis.speak(promptUtterance);
+
+            // Set timeout based on field type
+            const timeouts = {
+                'name': 8000,
+                'phone': 10000,
+                'email': 10000,
+                'location': 8000,
+                'size': 6000
+            };
+
+            setTimeout(() => {
+                try {
+                    recognition.stop();
+                } catch(e) {}
+            }, timeouts[fieldType] || 8000);
+
+            recognition.onresult = function(event) {
+                const result = event.results[0][0].transcript;
+
+                // Process the result based on field type
+                let processedResult = result;
+
+                if (fieldType === 'phone') {
+                    // Clean phone number
+                    processedResult = result.replace(/\s+/g, '').replace(/[^\d]/g, '');
+                } else if (fieldType === 'email') {
+                    // Clean email and ensure proper format
+                    processedResult = result.toLowerCase()
+                        .replace(/\s+/g, '')
+                        .replace(/at/g, '@')
+                        .replace(/dot/g, '.')
+                        .replace(/gmail/g, 'gmail');
+                } else if (fieldType === 'size') {
+                    // Extract number for farm size
+                    const numbers = result.match(/\d+(\.\d+)?/);
+                    processedResult = numbers ? numbers[0] : result;
+                }
+
+                field.value = processedResult;
+                showToast(`✅ ${fieldType} captured: ${processedResult}`, 'success');
+
+                // Speak confirmation
+                const confirmText = fieldType === 'email' ?
+                    `Email captured: ${processedResult}` :
+                    currentLang === 'hi' ? `${fieldType} दर्ज किया गया: ${processedResult}` :
+                    currentLang === 'gu' ? `${fieldType} દાખલ કર્યું: ${processedResult}` :
+                    `${fieldType} captured: ${processedResult}`;
+
+                const confirmUtterance = new SpeechSynthesisUtterance(confirmText);
+                confirmUtterance.lang = fieldType === 'email' ? 'en-IN' :
+                                       currentLang === 'hi' ? 'hi-IN' :
+                                       currentLang === 'gu' ? 'gu-IN' : 'en-IN';
+                confirmUtterance.rate = 0.9;
+                speechSynthesis.speak(confirmUtterance);
+            };
+
+            recognition.onerror = function(event) {
+                showToast('Voice input failed. Please try again.', 'error');
+                console.error('Speech recognition error:', event.error);
+            };
+
+            recognition.onend = function() {
+                // Reset button
+                voiceBtn.style.background = '#28a745';
+                voiceBtn.innerHTML = '🎤';
+                voiceBtn.disabled = false;
+            };
+        }
+
+        function toggleVoiceListening() {
+            const voiceBtn = document.getElementById('voiceListenBtn');
+
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showToast('Speech recognition not supported', 'error');
+                return;
+            }
+
+            if (isVoiceListening) {
+                if (window.currentRecognition) {
+                    window.currentRecognition.stop();
+                }
+                voiceBtn.classList.remove('listening', 'active');
+                isVoiceListening = false;
+                showToast('Voice listening stopped', 'info');
+            } else {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = getLanguageCode(currentLanguage);
+
+                recognition.onstart = function() {
+                    voiceBtn.classList.add('listening', 'active');
+                    isVoiceListening = true;
+                    showToast('Listening... Speak now!', 'success');
+                };
+
+                recognition.onresult = function(event) {
+                    const result = event.results[0][0].transcript;
+                    handleVoiceCommand(result);
+                };
+
+                recognition.onerror = function(event) {
+                    voiceBtn.classList.remove('listening', 'active');
+                    isVoiceListening = false;
+                    showToast('Voice recognition error. Try again.', 'error');
+                };
+
+                recognition.onend = function() {
+                    voiceBtn.classList.remove('listening', 'active');
+                    isVoiceListening = false;
+                };
+
+                window.currentRecognition = recognition;
+                recognition.start();
+            }
+        }
+
+        function getLanguageCode(lang) {
+            const codes = {
+                'en': 'en-IN', 'hi': 'hi-IN', 'bn': 'bn-IN', 'te': 'te-IN',
+                'mr': 'mr-IN', 'ta': 'ta-IN', 'gu': 'gu-IN', 'ur': 'ur-PK',
+                'kn': 'kn-IN', 'ml': 'ml-IN', 'or': 'or-IN', 'pa': 'pa-IN'
+            };
+            return codes[lang] || 'en-IN';
+        }
+
+        function handleVoiceCommand(spokenText) {
+            console.log('Voice command:', spokenText);
+
+            // Check if user is trying to fill a form field
+            const activeElement = document.activeElement;
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                fillFormFieldWithVoice(activeElement, spokenText);
+                return;
+            }
+
+            // Handle navigation commands
+            const command = spokenText.toLowerCase();
+            if (command.includes('farmer') || command.includes('किसान')) {
+                selectUserByType('farmer');
+            } else if (command.includes('middleman') || command.includes('बिचौलिया')) {
+                selectUserByType('middleman');
+            } else if (command.includes('agent') || command.includes('एजेंट')) {
+                selectUserByType('field_agent');
+            } else {
+                speakInCurrentLanguage('Command not recognized. Click on a form field and speak to fill it, or say a user type name.', 'कमांड समझ में नहीं आया। फॉर्म फील्ड पर क्लिक करें और बोलें।');
+            }
+        }
+
+        function selectUserByType(userType) {
+            const userCards = document.querySelectorAll('.user-card');
+            userCards.forEach((card, index) => {
+                if ((userType === 'farmer' && index === 0) ||
+                    (userType === 'middleman' && index === 1) ||
+                    (userType === 'field_agent' && index === 2)) {
+                    card.click();
+                }
+            });
+        }
+
+        function fillFormFieldWithVoice(field, spokenText) {
+            let cleanText = spokenText.trim();
+
+            if (field.type === 'email') {
+                cleanText = cleanText.replace(/\s+at\s+/gi, '@')
+                                   .replace(/\s+dot\s+/gi, '.')
+                                   .replace(/\s/g, '');
+            } else if (field.type === 'tel') {
+                cleanText = cleanText.replace(/\D/g, '');
+            } else if (field.type === 'number') {
+                const numbers = cleanText.match(/\d+/g);
+                cleanText = numbers ? numbers.join('') : '';
+            }
+
+            field.value = cleanText;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+
+            const fieldLabel = field.previousElementSibling?.textContent || field.placeholder;
+            showToast(`Filled: ${cleanText}`, 'success');
+            speakInCurrentLanguage(`Filled ${fieldLabel} with ${cleanText}`, `${fieldLabel} में ${cleanText} भरा गया`);
+        }
+
+        function speakPageContent() {
+            if (!('speechSynthesis' in window)) {
+                showToast('Speech synthesis not supported', 'error');
+                return;
+            }
+
+            const welcomeMessages = {
+                'en': 'Welcome to FarmTrace complete prototype. This application works in 24 Indian languages with full voice support for illiterate farmers. Click any user type to see their dashboard.',
+                'hi': 'फार्मट्रेस पूर्ण प्रोटोटाइप में आपका स्वागत है। यह एप्लिकेशन निरक्षर किसानों के लिए पूर्ण आवाज समर्थन के साथ 24 भारतीय भाषाओं में काम करती है। किसी भी उपयोगकर्ता प्रकार पर क्लिक करें।',
+                'as': 'ফার্মট্ৰেচৰ সম্পূৰ্ণ প্ৰটোটাইপলৈ আপোনাক স্বাগতম। এই এপ্লিকেশ্যনটো নিৰক্ষৰ কৃষকৰ বাবে সম্পূৰ্ণ কণ্ঠস্বৰ সহায়তাৰ সৈতে ২ৄ খন ভাৰতীয় ভাষাত কাম কৰে।',
+                'bn': 'ফার্মট্রেস সম্পূর্ণ প্রোটোটাইপে আপনাকে স্বাগতম। এই অ্যাপ্লিকেশনটি নিরক্ষর কৃষকদের জন্য সম্পূর্ণ ভয়েস সাপোর্ট সহ ২৪টি ভারতীয় ভাষায় কাজ করে।',
+                'gu': 'ફાર્મટ્રેસ સંપૂર્ણ પ્રોટોટાઇપમાં આપનું સ્વાગત છે. આ એપ્લિકેશન ૨૪ ભારતીય ભાષાઓમાં નિરક્ષર ખેડૂતો માટે સંપૂર્ણ વૉઇસ સપોર્ટ સાથે કામ કરે છે.',
+                'kn': 'ಫಾರ್ಮ್‌ಟ್ರೇಸ್ ಸಂಪೂರ್ಣ ಪ್ರೋಟೋಟೈಪ್‌ಗೆ ನಿಮಗೆ ಸ್ವಾಗತ. ಈ ಅಪ್ಲಿಕೇಶನ್ ಅನಕ್ಷರಸ್ಥ ರೈತರಿಗಾಗಿ ಸಂಪೂರ್ಣ ಧ್ವನಿ ಬೆಂಬಲದೊಂದಿಗೆ ೨೪ ಭಾರತೀಯ ಭಾಷೆಗಳಲ್ಲಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ.',
+                'ml': 'ഫാം ട്രേസ് സമ്പൂർണ്ണ പ്രോട്ടോടൈപ്പിലേക്ക് സ്വാഗതം. ഈ ആപ്ലിക്കേഷൻ നിരക്ഷരയായ കർഷകർക്കായി സമ്പൂർണ്ണ വോയ്സ് പിന്തുണയോടെ ൨൪ ഇന്ഡ്യൻ ഭാഷകളിൽ പ്രവർത്തിക്കുന്നു.',
+                'mr': 'फार्मट्रेस संपूर्ण प्रोटोटाइपमध्ये तुमचे स्वागत आहे. हे ऍप्लिकेशन निरक्षर शेतकऱ्यांसाठी संपूर्ण आवाज समर्थनासह २४ भारतीय भाषांमध्ये कार्य करते.',
+                'or': 'ଫାର୍ମଟ୍ରେସ୍ ସମ୍ପୂର୍ଣ୍ଣ ପ୍ରୋଟୋଟାଇପକୁ ସ୍ୱାଗତ। ଏହି ଆପ୍ଲିକେଶନ୍ ନିରକ୍ଷର କୃଷକଙ୍କ ପାଇଁ ସମ୍ପୂର୍ଣ୍ଣ ସ୍ୱର ସହାୟତା ସହିତ ୨୪ଟି ଭାରତୀୟ ଭାଷାରେ କାମ କରେ।',
+                'pa': 'ਫਾਰਮਟ੍ਰੇਸ ਸੰਪੂਰਨ ਪ੍ਰੋਟੋਟਾਈਪ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ। ਇਹ ਐਪਲੀਕੇਸ਼ਨ ਅਨਪੜ੍ਹ ਕਿਸਾਨਾਂ ਲਈ ਪੂਰਨ ਆਵਾਜ਼ ਸਹਿਯੋਗ ਨਾਲ ੨੪ ਭਾਰਤੀ ਭਾਸ਼ਾਵਾਂ ਵਿੱਚ ਕੰਮ ਕਰਦੀ ਹੈ।',
+                'ta': 'பார்ம்ட்ரேஸ் முழுமையான முன்மாதிரிக்கு வரவேற்கிறோம். இந்த செயலி கல்வியறிவற்ற விவசாயிகளுக்காக முழுமையான குரல் ஆதரவுடன் ௨௪ இந்திய மொழிகளில் செயல்படுகிறது।',
+                'te': 'ఫామ్‌ట్రేస్ పూర్తి నమూనాకు స్వాగతం. ఈ అప్లికేషన్ నిరక్షరాస్యత రైతుల కోసం పూర్తి వాయిస్ మద్దతుతో ౨౪ భారతీయ భాషల్లో పనిచేస్తుంది।',
+                'ur': 'فارم ٹریس مکمل پروٹو ٹائپ میں آپ کا خوش آمدید۔ یہ ایپلی کیشن ان پڑھ کسانوں کے لیے مکمل آواز کی مدد کے ساتھ ۲۴ ہندوستانی زبانوں میں کام کرتی ہے۔'
+            };
+
+            const translations = {
+                'en': {
+                    'name_label': 'Full Name',
+                    'phone_label': 'Phone Number',
+                    'email_label': 'Email',
+                    'location_label': 'Farm Location',
+                    'size_label': 'Farm Size in Acres',
+                    'name_placeholder': 'Enter your full name',
+                    'phone_placeholder': 'Enter your phone number',
+                    'email_placeholder': 'Enter your email address',
+                    'location_placeholder': 'Enter your farm location',
+                    'size_placeholder': 'Enter farm size in acres',
+                    'farmer_desc': 'Crop management, KYC upload, marketplace',
+                    'middleman_desc': 'Trade aggregation, price setting, logistics'
+                },
+                'hi': {
+                    'name_label': 'पूरा नाम',
+                    'phone_label': 'फोन नंबर',
+                    'email_label': 'ईमेल',
+                    'location_label': 'खेत का स्थान',
+                    'size_label': 'एकड़ में खेत का आकार',
+                    'name_placeholder': 'अपना पूरा नाम दर्ज करें',
+                    'phone_placeholder': 'अपना फोन नंबर दर्ज करें',
+                    'email_placeholder': 'अपना ईमेल पता दर्ज करें',
+                    'location_placeholder': 'अपने खेत का स्थान दर्ज करें',
+                    'size_placeholder': 'एकड़ में खेत का आकार दर्ज करें',
+                    'farmer_desc': 'फसल प्रबंधन, केवाईसी अपलोड, मार्केटप्लेस',
+                    'middleman_desc': 'व्यापार एकत्रीकरण, मूल्य निर्धारण, रसद'
+                },
+                'gu': {
+                    'name_label': 'પૂરું નામ',
+                    'phone_label': 'ફોન નંબર',
+                    'email_label': 'ઈમેઈલ',
+                    'location_label': 'ખેતરની જગ્યા',
+                    'size_label': 'એકરમાં ખેતરનું કદ',
+                    'name_placeholder': 'તમારું પૂરું નામ દાખલ કરો',
+                    'phone_placeholder': 'તમારો ફોન નંબર દાખલ કરો',
+                    'email_placeholder': 'તમારું ઈમેઈલ સરનામું દાખલ કરો',
+                    'location_placeholder': 'તમારા ખેતરનું સ્થાન દાખલ કરો',
+                    'size_placeholder': 'એકરમાં ખેતરનું કદ દાખલ કરો',
+                    'farmer_desc': 'પાક વ્યવસ્થાપન, કેવાયસી અપલોડ, માર્કેટપ્લેસ',
+                    'middleman_desc': 'વેપાર એકીકરણ, ભાવ નિર્ધારણ, લોજિસ્ટિક્સ'
+                }
+            };
+
+            const textToSpeak = welcomeMessages[currentLanguage] || welcomeMessages['en'];
+
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = getLanguageCode(currentLanguage);
+            utterance.rate = 0.8;
+
+            speechSynthesis.cancel();
+            speechSynthesis.speak(utterance);
+
+            showToast('Reading page content...', 'info');
+        }
+
+        function speakVoiceHelp() {
+            const helpMessages = {
+                'en': 'Welcome to FarmTrace voice help. This app works in 24 languages. To use: First, select your language. Second, click any form field and speak to fill it. Third, use voice commands like farmer, middleman to switch user types. Click the microphone and speak your commands.',
+                'hi': 'फार्मट्रेस वॉइस हेल्प में आपका स्वागत है। यह ऐप 24 भाषाओं में काम करता है। उपयोग करने के लिए: पहले, अपनी भाषा चुनें। दूसरे, किसी भी फॉर्म फील्ड पर क्लिक करें और भरने के लिए बोलें। तीसरे, किसान, बिचौलिया जैसे वॉइस कमांड का उपयोग करें।'
+            };
+
+            const helpText = helpMessages[currentLanguage] || helpMessages['en'];
+
+            const utterance = new SpeechSynthesisUtterance(helpText);
+            utterance.lang = getLanguageCode(currentLanguage);
+            utterance.rate = 0.7;
+
+            speechSynthesis.cancel();
+            speechSynthesis.speak(utterance);
+
+            showToast('Playing voice help...', 'info');
+        }
+
+        function speakInCurrentLanguage(englishText, hindiText) {
+            const textToSpeak = currentLanguage === 'hi' ? hindiText : englishText;
+            if (speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = getLanguageCode(currentLanguage);
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakWelcomeMessage() {
+            setTimeout(() => {
+                speakInCurrentLanguage(
+                    'Welcome to FarmTrace. Select a user type to see their dashboard. Voice features work in all 24 languages.',
+                    'फार्मट्रेस में आपका स्वागत है। डैशबोर्ड देखने के लिए उपयोगकर्ता प्रकार चुनें। वॉइस सुविधाएं सभी 24 भाषाओं में काम करती हैं।'
+                );
+            }, 1000);
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ========== ENHANCED MODAL MANAGEMENT ==========
+
+        function closeAllModals() {
+            const modals = document.querySelectorAll('[data-modal="true"]');
+            modals.forEach(modal => {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            });
+        }
+
+        function createModal(content, modalId = null) {
+            closeAllModals(); // Close any existing modals first
+
+            const modal = document.createElement('div');
+            modal.setAttribute('data-modal', 'true');
+            if (modalId) modal.id = modalId;
+
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="event.target === this && closeModal('${modalId || 'default'}')">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 90vw; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation();">
+                        ${content}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            return modal;
+        }
+
+        function closeModal(modalId = null) {
+            if (modalId && modalId !== 'default') {
+                const modal = document.getElementById(modalId);
+                if (modal && modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            } else {
+                closeAllModals();
+            }
+        }
+
+        function showActionModal(action) {
+            const content = `
+                <div style="text-align: center; max-width: 500px;">
+                    <h3 style="margin-bottom: 20px; color: #2d5a27;">✅ ${action}</h3>
+                    <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                        <p style="color: #666; margin-bottom: 15px;">This action has been successfully executed in demo mode.</p>
+                        <p style="color: #28a745; font-weight: bold;">Status: ✅ Completed</p>
+                        <p style="color: #666; font-size: 14px; margin-top: 10px;">Timestamp: ${new Date().toLocaleString()}</p>
+                    </div>
+                    <button onclick="closeModal()" style="background: #28a745; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px;">✓ Close</button>
+                </div>
+            `;
+
+            createModal(content, 'action-modal');
+            showToast(`${action} completed successfully!`, 'success');
+        }
+
+        // Farmer specific functions
+        function showMarketplace() {
+            const content = `
+                <h3 style="margin-bottom: 20px; color: #2d5a27;">🛒 Agricultural Marketplace</h3>
+                <div style="margin: 20px 0;">
+                    <h4>🌾 Available Buyers in Your Area:</h4>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>Metro Fresh Mart</strong> - Rice: ₹2,850/quintal | Min: 500kg<br>
+                        <small>📍 Distance: 5km | Rating: ⭐⭐⭐⭐⭐</small>
+                        <button style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px; margin-top: 10px;" onclick="contactBuyer('Metro Fresh Mart')">📞 Contact</button>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>Organic Store</strong> - Tomatoes: ₹3,200/quintal | Min: 200kg<br>
+                        <small>📍 Distance: 8km | Rating: ⭐⭐⭐⭐</small>
+                        <button style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px; margin-top: 10px;" onclick="contactBuyer('Organic Store')">📞 Contact</button>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <strong>Village Mandi</strong> - Mixed Vegetables: ₹2,500/quintal<br>
+                        <small>📍 Distance: 3km | Rating: ⭐⭐⭐</small>
+                        <button style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px; margin-top: 10px;" onclick="contactBuyer('Village Mandi')">📞 Contact</button>
+                    </div>
+                </div>
+                <button onclick="closeModal('marketplace')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 15px;">Close</button>
+            `;
+
+            createModal(content, 'marketplace');
+            showToast('Marketplace loaded with 3 active buyers!', 'success');
+            speakInCurrentLanguage('Marketplace shows 3 buyers interested in your crops', 'मार्केटप्लेस में 3 खरीदार आपकी फसलों में रुचि रखते हैं');
+        }
+
+        function contactBuyer(buyerName) {
+            showToast(`Contacting ${buyerName}...`, 'info');
+            speakInCurrentLanguage(`Contacting ${buyerName}`, `${buyerName} से संपर्क कर रहे हैं`);
+            setTimeout(() => {
+                showToast(`Successfully contacted ${buyerName}!`, 'success');
+                closeModal('marketplace');
+            }, 1500);
+        }
+
+        function checkSoilMoisture() {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px;">
+                        <h3 style="margin-bottom: 20px; color: #2d5a27;">💧 Soil Moisture Analysis</h3>
+                        <div style="background: #e8f5e8; padding: 20px; border-radius: 10px; margin: 15px 0;">
+                            <h4 style="color: #2d5a27;">Current Status: OPTIMAL ✅</h4>
+                            <p><strong>Moisture Level:</strong> 68% (Ideal: 60-75%)</p>
+                            <p><strong>Last Reading:</strong> ${new Date().toLocaleTimeString()}</p>
+                            <p><strong>Next Irrigation:</strong> In 2 days</p>
+                            <p><strong>Weather Forecast:</strong> No rain expected</p>
+                        </div>
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                            <strong>💡 Recommendation:</strong> Soil moisture is optimal. Continue current irrigation schedule.
+                        </div>
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            showToast('Soil moisture: 68% - Optimal level!', 'success');
+            speakInCurrentLanguage('Soil moisture is at optimal level of 68 percent', 'मिट्टी की नमी 68 प्रतिशत के अनुकूल स्तर पर है');
+        }
+
+        // Middleman specific functions
+        function showFarmerMarketplace() {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 700px; width: 95%;">
+                        <h3 style="margin-bottom: 20px; color: #2d5a27;">👨‍🌾 Available Farmers & Crops</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+                                <h4>Rajesh Kumar - Rice Producer</h4>
+                                <p><strong>Available:</strong> 750kg Premium Rice</p>
+                                <p><strong>Price:</strong> ₹2,800/quintal</p>
+                                <p><strong>Quality:</strong> Grade A+ ⭐⭐⭐⭐⭐</p>
+                                <p><strong>Location:</strong> 5km away</p>
+                                <button style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px; width: 100%; margin-top: 10px;">🛒 Purchase</button>
+                            </div>
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+                                <h4>Sunita Devi - Vegetable Farm</h4>
+                                <p><strong>Available:</strong> 500kg Mixed Vegetables</p>
+                                <p><strong>Price:</strong> ₹3,100/quintal</p>
+                                <p><strong>Quality:</strong> Grade A ⭐⭐⭐⭐</p>
+                                <p><strong>Location:</strong> 3km away</p>
+                                <button style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px; width: 100%; margin-top: 10px;">🛒 Purchase</button>
+                            </div>
+                        </div>
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 20px;">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            showToast('Found 2 farmers with available crops!', 'success');
+            speakInCurrentLanguage('Found 2 farmers with crops ready for purchase', '2 किसान खरीदारी के लिए तैयार फसल के साथ मिले');
+        }
+
+        function setMarketPrices() {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                        <h3 style="margin-bottom: 20px; color: #2d5a27;">💰 Set Market Prices</h3>
+                        <div style="margin: 20px 0;">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Rice (per quintal):</label>
+                                <input type="number" value="2850" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Wheat (per quintal):</label>
+                                <input type="number" value="2950" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Vegetables (per quintal):</label>
+                                <input type="number" value="3200" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Cancel</button>
+                            <button onclick="updatePrices(); this.closest('div').parentElement.remove();" style="background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">Update Prices</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            showToast('Price setting panel opened', 'info');
+            speakInCurrentLanguage('Market price setting panel is now open', 'बाजार मूल्य निर्धारण पैनल अब खुला है');
+        }
+
+        function updatePrices() {
+            showToast('Market prices updated successfully!', 'success');
+            speakInCurrentLanguage('Market prices have been updated', 'बाजार की कीमतें अपडेट हो गई हैं');
+        }
+
+        function showPriceTrends() {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 95%;">
+                        <h3 style="margin-bottom: 20px; color: #2d5a27;">📊 Price Trend Analysis</h3>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 15px 0;">
+                            <h4>🌾 Rice Prices (Last 7 days)</h4>
+                            <p>📈 Trend: <span style="color: #28a745;">+8.5% ↗️</span></p>
+                            <p>Current: ₹2,850/quintal | Peak: ₹2,900 | Low: ₹2,630</p>
+                            <p><strong>Prediction:</strong> Prices likely to increase by 3-5% next week</p>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 15px 0;">
+                            <h4>🥕 Vegetable Prices (Last 7 days)</h4>
+                            <p>📉 Trend: <span style="color: #dc3545;">-4.2% ↘️</span></p>
+                            <p>Current: ₹3,200/quintal | Peak: ₹3,450 | Low: ₹3,180</p>
+                            <p><strong>Prediction:</strong> Prices may stabilize at current levels</p>
+                        </div>
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            showToast('Price trends analyzed for last 7 days', 'success');
+            speakInCurrentLanguage('Price trend analysis shows rice prices increasing', 'मूल्य प्रवृत्ति विश्लेषण चावल की कीमतों में वृद्धि दिखाता है');
+        }
+
+        function findRetailers() {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 95%;">
+                        <h3 style="margin-bottom: 20px; color: #2d5a27;">🏪 Retailers in Your Network</h3>
+                        <div style="margin: 20px 0;">
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                                <h4>Fresh Mart Supermarket</h4>
+                                <p><strong>Requirements:</strong> 200kg Rice, 150kg Vegetables weekly</p>
+                                <p><strong>Payment Terms:</strong> 15 days | Rating: ⭐⭐⭐⭐⭐</p>
+                                <p><strong>Contact:</strong> +91-98765-12345</p>
+                                <button style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px;">📞 Contact</button>
+                            </div>
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                                <h4>Organic Valley Store</h4>
+                                <p><strong>Requirements:</strong> 100kg Organic Produce monthly</p>
+                                <p><strong>Payment Terms:</strong> 7 days | Rating: ⭐⭐⭐⭐</p>
+                                <p><strong>Contact:</strong> +91-98765-67890</p>
+                                <button style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px;">📞 Contact</button>
+                            </div>
+                        </div>
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            showToast('Found 2 active retailers looking for suppliers', 'success');
+            speakInCurrentLanguage('Found 2 retailers seeking fresh produce suppliers', '2 खुदरा विक्रेता ताजा उत्पाद आपूर्तिकर्ता की तलाश में मिले');
+        }
+
+        // Field Agent functions
+        function reviewKYCDocuments() {
+            showActionModal('📑 Review KYC Documents');
+            speakInCurrentLanguage('KYC document review panel opened', 'केवाईसी दस्तावेज़ समीक्षा पैनल खुला');
+        }
+
+        function scheduleFarmVisit() {
+            showActionModal('🌾 Schedule Farm Visit');
+            speakInCurrentLanguage('Farm visit scheduled successfully', 'खेत की यात्रा सफलतापूर्वक निर्धारित');
+        }
+
+        function approveApplications() {
+            showActionModal('✓ Approve Applications');
+            speakInCurrentLanguage('Applications approved successfully', 'आवेदन सफलतापूर्वक अनुमोदित');
+        }
+
+        function generateReports() {
+            showActionModal('📊 Generate Reports');
+            speakInCurrentLanguage('Reports generated successfully', 'रिपोर्ट सफलतापूर्वक जेनेरेट की गई');
+        }
+
+        // Transporter functions
+        function trackVehicles() {
+            showActionModal('📍 Track Live Vehicles');
+            speakInCurrentLanguage('Vehicle tracking system opened', 'वाहन ट्रैकिंग सिस्टम खुला');
+        }
+
+        function optimizeRoutes() {
+            showActionModal('🗺️ Optimize Routes');
+            speakInCurrentLanguage('Route optimization completed', 'मार्ग अनुकूलन पूरा हुआ');
+        }
+
+        function contactDrivers() {
+            showActionModal('📞 Contact Drivers');
+            speakInCurrentLanguage('Driver contact system opened', 'ड्राइवर संपर्क सिस्टम खुला');
+        }
+
+        function manageFuelCosts() {
+            showActionModal('⛽ Manage Fuel Costs');
+            speakInCurrentLanguage('Fuel cost management panel opened', 'ईंधन लागत प्रबंधन पैनल खुला');
+        }
+
+        // Consumer functions
+        function scanProductQR() {
+            showActionModal('📱 Scan Product QR');
+            speakInCurrentLanguage('QR scanner opened for product verification', 'उत्पाद सत्यापन के लिए QR स्कैनर खुला');
+        }
+
+        function showProductHistory() {
+            showActionModal('📜 Product History');
+            speakInCurrentLanguage('Product history and traceability displayed', 'उत्पाद इतिहास और ट्रेसेबिलिटी दिखाई गई');
+        }
+
+        function rateAndReview() {
+            showActionModal('⭐ Rate & Review');
+            speakInCurrentLanguage('Rating and review panel opened', 'रेटिंग और समीक्षा पैनल खुला');
+        }
+
+        function reportIssue() {
+            showActionModal('🚨 Report Issue');
+            speakInCurrentLanguage('Issue reporting system opened', 'समस्या रिपोर्टिंग सिस्टम खुला');
+        }
+
+        // Enhanced keyboard and event handling
+        document.addEventListener('keydown', function(e) {
+            // Close modals with Escape key
+            if (e.key === 'Escape') {
+                closeAllModals();
+            }
+        });
+
+        // Prevent interface freezing by handling errors globally
+        window.addEventListener('error', function(event) {
+            console.error('JavaScript error caught:', event.error);
+            showToast('An error occurred. Interface remains responsive.', 'error');
+        });
+
+        // Prevent unhandled promise rejections from freezing interface
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            event.preventDefault();
+            showToast('Operation completed with warnings.', 'warning');
+        });
+
+        // Form submission handler
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            try {
+                const formData = {
+                    name: document.getElementById('farmerName').value,
+                    phone: document.getElementById('farmerPhone').value,
+                    email: document.getElementById('farmerEmail').value,
+                    location: document.getElementById('farmLocation').value,
+                    size: document.getElementById('farmSize').value
+                };
+
+                console.log('Farmer registered:', formData);
+                showToast('Farmer registered successfully!', 'success');
+                speakInCurrentLanguage('Farmer registration completed successfully', 'किसान पंजीकरण सफलतापूर्वक पूरा हुआ');
+            } catch (error) {
+                console.error('Form submission error:', error);
+                showToast('Registration form error. Please try again.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmTrace - Blockchain Agricultural Supply Chain Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            opacity: 0.95;
+        }
+
+        .language-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .language-selector {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .voice-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .voice-toggle:hover,
+        .voice-toggle.active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .user-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .user-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(45, 90, 39, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .user-card:hover::before {
+            left: 100%;
+        }
+
+        .user-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            border-color: #2d5a27;
+        }
+
+        .user-emoji {
+            font-size: 4em;
+            margin-bottom: 15px;
+            display: block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .user-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2d5a27;
+            margin-bottom: 8px;
+        }
+
+        .user-description {
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .features-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .features-title {
+            text-align: center;
+            font-size: 2em;
+            color: #2d5a27;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            border-left: 5px solid #2d5a27;
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2d5a27;
+            margin-bottom: 10px;
+        }
+
+        .feature-description {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .demo-button {
+            background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(45, 90, 39, 0.3);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 10000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error { background: #dc3545; }
+        .toast.warning { background: #ffc107; color: #212529; }
+        .toast.info { background: #17a2b8; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2em; }
+            .user-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+            .language-controls { position: relative; top: auto; right: auto; margin-top: 15px; justify-content: center; }
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="language-controls">
+            <select class="language-selector" id="languageSelector" onchange="changeLanguage(this.value)">
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="or">ଓଡ଼ିଆ</option>
+                <option value="bn">বাংলা</option>
+                <option value="te">తెలుగు</option>
+                <option value="ta">தமிழ்</option>
+                <option value="gu">ગુજરાતી</option>
+                <option value="mr">मराठी</option>
+                <option value="kn">ಕನ್ನಡ</option>
+                <option value="ml">മലയാളം</option>
+                <option value="pa">ਪੰਜਾਬੀ</option>
+                <option value="ur">اردو</option>
+            </select>
+            <button class="voice-toggle" id="voiceToggle" onclick="toggleVoice()">🔊</button>
+        </div>
+
+        <h1>FarmTrace</h1>
+        <p>Blockchain Agricultural Supply Chain Platform</p>
+        <p style="font-size: 1.1em; opacity: 0.9;">Government of Odisha • Electronics & IT Department</p>
+        <p style="font-size: 1.2em; font-weight: 500; color: #e8f5e8;">🌾 Complete Agricultural Ecosystem • All Stakeholders Connected • Live Blockchain Integration</p>
+    </div>
+
+    <div class="main-container">
+        <!-- Demo Access Buttons -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: #2d5a27; margin-bottom: 20px;">🎯 SIH 2025 Demo Access</h2>
+            <a href="farmtrace_app.html" class="demo-button">
+                🚀 Launch Complete Application
+            </a>
+            <a href="farmtrace_PERFECT.html" class="demo-button">
+                ⭐ View Perfect Version
+            </a>
+        </div>
+
+        <!-- User Types Grid -->
+        <div class="user-grid">
+            <div class="user-card" onclick="openDemo('farmer')">
+                <span class="user-emoji">👨‍🌾</span>
+                <h3 class="user-title">Farmer</h3>
+                <p class="user-description">Agricultural producer and crop grower</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('middleman')">
+                <span class="user-emoji">🤝</span>
+                <h3 class="user-title">Middleman</h3>
+                <p class="user-description">Agricultural intermediary and distributor</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('field_agent')">
+                <span class="user-emoji">👷‍♂️</span>
+                <h3 class="user-title">Field Agent</h3>
+                <p class="user-description">On-ground agricultural support specialist</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('transporter')">
+                <span class="user-emoji">🚚</span>
+                <h3 class="user-title">Transporter</h3>
+                <p class="user-description">Logistics and transportation provider</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('retailer')">
+                <span class="user-emoji">🏪</span>
+                <h3 class="user-title">Retailer</h3>
+                <p class="user-description">End-point seller to consumers</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('consumer')">
+                <span class="user-emoji">👥</span>
+                <h3 class="user-title">Consumer</h3>
+                <p class="user-description">End user and product purchaser</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('corporate_buyer')">
+                <span class="user-emoji">🏢</span>
+                <h3 class="user-title">Corporate Buyer</h3>
+                <p class="user-description">Large-scale commercial purchaser</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('bank')">
+                <span class="user-emoji">🏦</span>
+                <h3 class="user-title">Bank</h3>
+                <p class="user-description">Financial services provider</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('mandi_official')">
+                <span class="user-emoji">🏛️</span>
+                <h3 class="user-title">Mandi Official</h3>
+                <p class="user-description">Market regulator and administrator</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('government')">
+                <span class="user-emoji">🏛️</span>
+                <h3 class="user-title">Government</h3>
+                <p class="user-description">Policy maker and regulator</p>
+            </div>
+
+            <div class="user-card" onclick="openDemo('certification_body')">
+                <span class="user-emoji">📋</span>
+                <h3 class="user-title">Certification Body</h3>
+                <p class="user-description">Quality and standards certifier</p>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features-section">
+            <h2 class="features-title">Key Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🔗</span>
+                    <h3 class="feature-title">Blockchain Integration</h3>
+                    <p class="feature-description">Complete transparency and immutability in agricultural supply chain</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🗣️</span>
+                    <h3 class="feature-title">Voice Support</h3>
+                    <p class="feature-description">Voice input and output for illiterate farmers and users</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🌐</span>
+                    <h3 class="feature-title">Multi-language Support</h3>
+                    <p class="feature-description">Available in 12+ Indian languages including Odia</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📱</span>
+                    <h3 class="feature-title">Mobile Friendly</h3>
+                    <p class="feature-description">Responsive design works on all devices</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🔒</span>
+                    <h3 class="feature-title">Secure KYC</h3>
+                    <p class="feature-description">Government-approved KYC verification system</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">💰</span>
+                    <h3 class="feature-title">Fair Pricing</h3>
+                    <p class="feature-description">AI-powered price analysis for fair market rates</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let currentLanguage = 'en';
+        let voiceEnabled = false;
+
+        function changeLanguage(language) {
+            currentLanguage = language;
+            showToast(`Language changed to ${language}`, 'success');
+            speakText(`Language changed to ${language}`);
+        }
+
+        function toggleVoice() {
+            voiceEnabled = !voiceEnabled;
+            const toggle = document.getElementById('voiceToggle');
+
+            if (voiceEnabled) {
+                toggle.classList.add('active');
+                toggle.textContent = '🔊';
+                speakText('Voice enabled');
+            } else {
+                toggle.classList.remove('active');
+                toggle.textContent = '🔇';
+            }
+        }
+
+        function openDemo(userType) {
+            speakText(`Opening ${userType} demo`);
+            showToast(`Loading ${userType} dashboard...`, 'info');
+
+            // Redirect to the main application
+            setTimeout(() => {
+                window.location.href = 'farmtrace_app.html';
+            }, 1000);
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function speakText(text) {
+            if (voiceEnabled && 'speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = currentLanguage === 'hi' ? 'hi-IN' :
+                                currentLanguage === 'or' ? 'hi-IN' : 'en-US';
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('FarmTrace Platform Ready!', 'success');
+            setTimeout(() => {
+                speakText('Welcome to FarmTrace. Blockchain Agricultural Supply Chain Platform for Odisha.');
+            }, 1000);
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.classList.contains('user-card')) {
+                e.target.click();
+            }
+        });
+    </script>
+</body>
+</html>
